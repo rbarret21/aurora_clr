@@ -1,15 +1,20 @@
-name: "Gerador de Rotas ITX"
+
+name: "Rotas ITX"
 slug: "rotas-itx"
 version: "1.0.0"
-description: "Aplicação Python independente hospedada no HA"
+
+ingress: true
+panel_icon: mdi:web
+panel_title: "Rotas ITX"
+
+startup: services
+boot: auto
+
 arch:
   - amd64
   - aarch64
   - armv7
-startup: services
-boot: auto
-ingress: false
-ports:
-  5050/tcp: 5050
+  - armhf
+
 options: {}
 schema: {}
