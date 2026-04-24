@@ -1,5 +1,5 @@
 name: "Gerador de Rotas ITX"
-slug: "ROTAS_ITX"
+slug: "rotas-itx"
 version: "1.0.0"
 description: "Aplicação Python independente hospedada no HA"
 arch:
