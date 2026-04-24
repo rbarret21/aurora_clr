@@ -1,7 +1,7 @@
 
 name: "Rotas ITX"
 slug: "rotas-itx"
-version: "1.0.0"
+version: "1.0.1"
 
 ingress: true
 panel_icon: mdi:web
