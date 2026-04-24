@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gerador de Rotas ITX — Interface Profissional</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/modern-normalize/2.0.0/modern-normalize.min.css">
+  <style>
+    body{font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#f0f9ff; color:#0f172a}
+    .wrap{max-width:1200px; margin:40px auto; padding:24px; background:#111827; border-radius:12px; box-shadow: 0 10px 30px rgba(0,0,0,.4)}
+    h1{font-size:22px; margin:0 0 12px; color:#e2e8f0}
+    p.sub{color:#94a3b8; margin-top:0}
+    .panel{background:#f0f9ff; border:1px solid #1f2937; padding:16px; border-radius:10px; margin:16px 0}
+    label{display:block; margin:8px 0 6px; color:#0f172a}
+    input[type=file]{width:100%; padding:10px; background:#0f172a; color:#e2e8f0; border:1px dashed #334155; border-radius:8px}
+    .actions{display:flex; gap:12px; margin-top:16px}
+    button{background:#2563eb; color:white; border:none; padding:10px 16px; border-radius:8px; cursor:pointer}
+    button.secondary{background:#7A1E1E}
+    button.email{background:#334155}
+    button.planilha{background:#006400}
+    .tips{font-size:13px; color:#475569}
+	.flash {
+	  padding: 10px 12px;
+	  border-radius: 8px;
+	  margin: 10px 0;
+	  font-weight: 500;
+	  color: #f1f5f9;
+	  display: flex;
+	  align-items: center;
+	  gap: 8px; /* espaço entre ícone e texto */
+	}
+
+	/* ❌ Erro */
+	.flash-error {
+	  background: #7f1d1d;
+	}
+	.flash-error::before {
+	  content: "✖";
+	  font-weight: bold;
+	}
+
+	/* ✅ Sucesso */
+	.flash-success {
+	  background: #166534;
+	}
+	.flash-success::before {
+	  content: "✔";
+	  font-weight: bold;
+	}
+
+	/* 🟠 Aviso */
+	.flash-warning {
+	  background: #9a3412;
+	}
+	.flash-warning::before {
+	  content: "⚠";
+	}
+
+	/* ℹ️ Info */
+	.flash-info {
+	  background: #1e3a8a;
+	}
+	.flash-info::before {
+	  content: "ℹ";
+	}
+
+    code{background:#0b1220; color:#e2e8f0; padding:2px 6px; border-radius:6px}
+    .helper-links{margin-top:10px; font-size:14px}
+    .helper-links a{color:#2563eb; text-decoration:underline; margin-right:12px}
+	.section-divider {border: none; border-top: 1px solid #e2e8f0; margin: 16px 0;}
+    footer {
+	  margin-top: 16px;
+	  text-align: center;
+	  font-size: 16px;
+	  color: #0f172a;
+}
+
+.field-inline {
+  gap: 5px;
+  margin-top: 5px;
+  margin-bottom: 10px;
+}
+
+.field-inline label {
+  display: inline-block;   /* 🔴 força inline */
+  white-space: nowrap;
+  min-width: 80px;
+  margin: 10;
+}
+
+.field-inline input {
+  margin-top: 6px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+}
+
+    #terminal-log {
+	 width: 100%;
+	   height: 260px;
+	   max-height: 260px;
+	   overflow-y: auto;
+	   overflow-x: hidden;
+	   background: #020617;
+	   color: #e5e7eb;
+	   font-family: monospace;
+	   font-size: 13px;
+	   line-height: 1.45;
+	   padding: 10px;
+	   border-radius: 8px;
+	   border: 1px solid #334155;
+	   white-space: pre-wrap;
+	   word-break: break-word;
+}
+
+    .log-error { color: #ef4444; }   /* vermelho */
+    .log-warn  { color: #f97316; }   /* laranja */
+    .log-info  { color: #facc15; }   /* amarelo */
+    .log-debug { color: #60a5fa; }   /* azul */
+    .log-success { color: #16a34a; }   /* verde */
+
+     padding: 8px;
+     border-radius: 8px;
+     border: 1px solid #334155;
+
+     margin-bottom: 5px;
+    }
+
+  </style>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  let autoScroll = true;
+  const terminal = document.getElementById("terminal-log");
+
+  terminal.addEventListener("scroll", () => {
+    const atBottom =
+      terminal.scrollTop + terminal.clientHeight >=
+      terminal.scrollHeight - 5;
+    autoScroll = atBottom;
+  });
+
+
+function formatarLog(linha) {
+  if (linha.startsWith("[ERROR]")) {
+    return `<span class="log-error">[ERROR]</span>${linha.substring(7)}`;
+  }
+  if (linha.startsWith("[WARN]")) {
+    return `<span class="log-warn">[WARN]</span>${linha.substring(6)}`;
+  }
+  if (linha.startsWith("[INFO]")) {
+    return `<span class="log-info">[INFO]</span>${linha.substring(6)}`;
+  }
+  if (linha.startsWith("[DEBUG]")) {
+    return `<span class="log-debug">[DEBUG]</span>${linha.substring(7)}`;
+  }
+  if (linha.startsWith("[OK]")) {
+    return `<span class="log-success">[OK]</span>${linha.substring(4)}`;
+  }
+  return linha;
+}
+
+  async function atualizarTerminal() {
+    const resp = await fetch("/logs");
+    if (!resp.ok) return;
+
+    const data = await resp.json();
+
+    terminal.innerHTML = data.logs
+      .map(formatarLog)
+      .join("\n");
+
+    if (autoScroll) {
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+  }
+
+  atualizarTerminal();
+  setInterval(atualizarTerminal, 1000);
+});
+
+
+
+async function limparTela() {
+  // 🔹 limpa input de arquivo
+  const fileInput = document.querySelector('input[type="file"]');
+  if (fileInput) fileInput.value = null;
+
+  // 🔹 limpa o terminal de log
+  const terminal = document.getElementById("terminal-log");
+  if (terminal) terminal.innerHTML = "";
+
+  // 🔹 remove os banners flash da tela
+  document.querySelectorAll(".flash").forEach(el => el.remove());
+
+  // 🔹 (opcional) limpa logs no backend
+  try {
+    await fetch("/limpar_logs", { method: "POST" });
+  } catch (e) {
+    console.error("Erro ao limpar logs no backend", e);
+  }
+}
+
+setTimeout(() => {
+  document.querySelectorAll(".flash").forEach(el => {
+    el.remove();
+  });
+}, 10000); // 10 segundos
+
+
+</script>
+
+</head>
+<body>
+  <div class="wrap">
+    <h1>AURORA - Gerador de Rotas ITX</h1>
+    <p class="sub">Envie sua planilha e gere script, planilha e e‑mails.
+
+
+	{% with messages = get_flashed_messages(with_categories=true) %}
+	  {% if messages %}
+	    {% for category, message in messages %}
+	      <div class="flash flash-{{ category }}">
+	        {{ message }}
+	      </div>
+	    {% endfor %}
+	  {% endif %}
+	{% endwith %}
+
+
+    <form class="panel" method="post" enctype="multipart/form-data" action="{{ url_for('gerar') }}">
+      <label>Arquivo de entrada (CSV / XLS / XLSX). Para obter um modelo, <a href="{{ url_for('download_modelo', formato='csv') }}">clique aqui</a></p></label>
+      <input type="file" name="arquivo" required />
+
+      <div class="field-inline">
+	  	    <label for="ativado_por">Ativado por:</label>
+	  	    <input
+	  	      type="text"
+	  	      id="ativado_por"
+	  	      name="ativado_por"
+	  	      required
+	  	      placeholder="Nome do configurador"><br>
+	  </div>
+
+	  <hr class="section-divider">
+
+	  </
+
+      <div class="actions">
+        <button type="submit">Gerar Script de Configuração</button>
+        <button type="submit" class="planilha" formaction="{{ url_for('gerar_planilha') }}">Gerar Planilha de Ativação</button>
+        <button type="submit" class="email" formaction="{{ url_for('enviar_email') }}">Enviar Email de Ativação</button>
+		<button type="button" class="secondary" onclick="limparTela()">Limpar</button>
+
+     <pre id="terminal-log" class="terminal"></pre>
+
+      </div>
+    </form>
+
+    <footer>© {{ 2026 }} Gerador de Rotas ITX V1.8.1</footer>
+  </div>
+</body>
+</html>
+
